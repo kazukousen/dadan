@@ -46,5 +46,11 @@ module Dadan
       day = Time.now.strftime("%Y%m%d")
       Memo.open_dayfile(day)
     end
+
+    desc "yesterday's file", "yesterday's file open"
+    def yesterday
+      day = Time.now.yesterday.strftime("%Y%m%d")
+      Memo.open_dayfile(day)
+    end
   end
 end
