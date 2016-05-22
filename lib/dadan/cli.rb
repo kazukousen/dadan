@@ -5,6 +5,7 @@ require 'thor'
 module Dadan
   class CLI < Thor
     module Worker
+      Editor = 'vi'
       Path = "#{Dir.home}/.dadan/worker.md"
     end
     default_command :first_run
@@ -16,9 +17,10 @@ module Dadan
 
     desc 'run', 'default new file'
     def first_run
-      worker
-      edit
-      save
+      memo = Memo.new(Worker::Editor)
+      memo.edit
+      time = memo.save
+      puts "Memorized at #{time}"
     end
 
     desc 'worker', 'workspace'
@@ -33,7 +35,7 @@ module Dadan
 
     desc 'edior', 'vim output'
     def edit
-      system("vi #{Worker::Path}")
+      system("#{Worker::Editor} #{Worker::Path}")
     end
 
     desc 'save', 'file save'
@@ -51,6 +53,15 @@ module Dadan
     def yesterday
       day = Time.now.yesterday.strftime("%Y%m%d")
       Memo.open_dayfile(day)
+    end
+
+    desc "day's file", "day's file open"
+    def day(daytime)
+      if daytime.length == 4
+        year = Time.now.strftime("%Y")
+        daytime = "#{year}#{daytime}"
+      end
+      Memo.open_dayfile(daytime)
     end
   end
 end

@@ -1,44 +1,58 @@
-require 'digest/sha1'
 require 'zlib'
 require 'fileutils'
 
 module Dadan
   class Memo
-    module ObjectType
-      File = 'file'
+
+    module WorkSpace
+      Dadan = "#{Dir.home}/.dadan"
+      Objects = "#{Dadan}/objects"
+      Path = "#{Dadan}/worker.md"
     end
 
-    def self.save_file(worker_path)
-      time = Time.now.strftime("%Y%m%d%H%M%S")
-      self.save_object(ObjectType::File, worker_path, time)
-    end
-
-    def self.open_dayfile(day)
-      Dir.glob("#{Dir.home}/.dadan/objects/#{day}*").each do |file|
-        puts self.open_object(ObjectType::File, file[-14..-1])
+    def initialize(editor)
+      @editor = editor
+      if File.exists?(WorkSpace::Dadan)
+        FileUtils.rm(WorkSpace::Path) if File.exists?(WorkSpace::Path)
+      else
+        FileUtils.mkdir_p(WorkSpace::Dadan)
       end
     end
 
-    def self.open_file(time)
-      self.open_object(ObjectType::File, time)
+    attr_reader :editor
+
+    def edit
+      system("#{@editor} #{WorkSpace::Path}")
     end
 
-    private
-    def self.save_object(object_type, src_path, time)
-      packed_body = Zlib::Deflate.deflate(File.read(src_path))
+    def save
+      time = Time.now.strftime("%Y%m%d%H%M%S")
+      packed_body = Zlib::Deflate.deflate(File.read(WorkSpace::Path))
+      FileUtils.mkdir_p(WorkSpace::Objects) unless File.exists?(WorkSpace::Objects)
 
-      object_dir = "#{Dir.home}/.dadan/objects"
-      FileUtils.mkdir_p(object_dir) unless File.exists?(object_dir)
-
-      open("#{object_dir}/#{time}", 'w') do |file|
+      open("#{WorkSpace::Objects}/#{time}", 'w') do |file|
         file.write packed_body
       end
 
       time
     end
 
-    def self.open_object(object_type, time)
-      object_path = "#{Dir.home}/.dadan/objects/#{time}"
+    def self.open_dayfile(day)
+      statements = ""
+      Dir.glob("#{Dir.home}/.dadan/objects/#{day}*").each do |file|
+        statements << self.open_object(file[-14..-1])
+        statements << "---\n"
+      end
+      puts statements
+    end
+
+    def self.open_file(time)
+      puts self.open_object(time)
+    end
+
+    private
+    def self.open_object(time)
+      object_path = "#{WorkSpace::Objects}/#{time}"
       raise 'Invalid File at this time' unless File.exists?(object_path)
       Zlib::Inflate.inflate(File.read(object_path))
     end
